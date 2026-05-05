@@ -1,2 +1,284 @@
 # KG1-Unit2-Toys-Listening
 KG1 Unit2 Toys Listening
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KG1 Unit2 Toys Audio Quiz</title>
+    <style>
+        :root {
+            --primary-color: #ff7e5f;
+            --secondary-color: #feb47b;
+            --success-color: #4CAF50;
+            --error-color: #f44336;
+            --bg-color: #fff9f0;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', 'Heiti SC', sans-serif;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            background-color: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #ff6b6b;
+            margin-top: 0;
+            font-size: 1.8rem;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .audio-section {
+            background: #fff;
+            border: 4px dashed #feb47b;
+            border-radius: 20px;
+            padding: 40px 20px;
+            margin-bottom: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .audio-section:hover {
+            background: #fff5ed;
+            transform: scale(1.02);
+        }
+
+        .play-icon {
+            font-size: 80px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .instruction {
+            font-size: 1.2rem;
+            color: #666;
+            font-weight: bold;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .option-card {
+            background: #fff;
+            border: 3px solid #eee;
+            border-radius: 15px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .option-card:hover {
+            border-color: var(--secondary-color);
+            background-color: #fffaf0;
+        }
+
+        .option-card.correct {
+            border-color: var(--success-color);
+            background-color: #e8f5e9;
+        }
+
+        .option-card.wrong {
+            border-color: var(--error-color);
+            background-color: #ffebee;
+        }
+
+        .emoji {
+            font-size: 3rem;
+            margin-bottom: 10px;
+        }
+
+        .pinyin {
+            color: #999;
+            font-size: 0.9rem;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .chinese {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #444;
+        }
+
+        .feedback {
+            margin-top: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            height: 40px;
+        }
+
+        .score-board {
+            margin-top: 20px;
+            font-size: 1.2rem;
+            color: #777;
+        }
+
+        .btn-next {
+            margin-top: 20px;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            display: none;
+        }
+
+        .btn-next:hover {
+            background: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🧸 KG1 Unit2 Toys Audio Quiz 🪀</h1>
+        
+        <!-- 听力播放区 -->
+        <div class="audio-section" id="audioBtn" onclick="playCurrentWord()">
+            <span class="play-icon">🔊</span>
+            <div class="instruction">点击听录音 (Click to Listen)</div>
+        </div>
+
+        <div id="feedback" class="feedback"></div>
+
+        <!-- 词语选项区 -->
+        <div class="options-grid" id="optionsGrid">
+            <!-- 动态生成选项 -->
+        </div>
+
+        <div class="score-board">
+            得分 (Score): <span id="score">0</span>
+        </div>
+
+        <button class="btn-next" id="nextBtn" onclick="nextQuestion()">下一题 (Next Question)</button>
+    </div>
+
+    <script>
+        // 定义词汇，添加了相应的 emoji
+        const toys = [
+            { chinese: '娃娃', pinyin: 'wá wa', emoji: '🪆' },
+            { chinese: '球', pinyin: 'qiú', emoji: '⚽' },
+            { chinese: '拼图', pinyin: 'pīn tú', emoji: '🧩' },
+            { chinese: '积木', pinyin: 'jī mù', emoji: '🧱' }
+        ];
+
+        let currentWord = null;
+        let score = 0;
+        let canClick = true;
+
+        const optionsGrid = document.getElementById('optionsGrid');
+        const feedbackDiv = document.getElementById('feedback');
+        const scoreSpan = document.getElementById('score');
+        const nextBtn = document.getElementById('nextBtn');
+
+        // 初始化游戏
+        function initGame() {
+            renderOptions();
+            pickRandomWord();
+        }
+
+        // 渲染选项卡片
+        function renderOptions() {
+            optionsGrid.innerHTML = '';
+            // 打乱顺序
+            const shuffled = [...toys].sort(() => Math.random() - 0.5);
+            
+            shuffled.forEach(toy => {
+                const card = document.createElement('div');
+                card.className = 'option-card';
+                card.innerHTML = `
+                    <span class="emoji">${toy.emoji}</span>
+                    <span class="pinyin">${toy.pinyin}</span>
+                    <span class="chinese">${toy.chinese}</span>
+                `;
+                card.onclick = () => checkAnswer(toy.chinese, card);
+                optionsGrid.appendChild(card);
+            });
+        }
+
+        // 随机选择一个目标词
+        function pickRandomWord() {
+            currentWord = toys[Math.floor(Math.random() * toys.length)];
+            // 延迟自动播放，确保页面加载完成
+            setTimeout(() => playCurrentWord(), 800);
+        }
+
+        // 播放语音
+        function playCurrentWord() {
+            if (!currentWord) return;
+            // 停止当前所有正在播放的声音
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(currentWord.chinese);
+            utterance.lang = 'zh-CN';
+            utterance.rate = 0.7; // 慢速更清晰
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // 检查答案
+        function checkAnswer(selectedChinese, cardElement) {
+            if (!canClick) return;
+
+            canClick = false;
+            if (selectedChinese === currentWord.chinese) {
+                cardElement.classList.add('correct');
+                feedbackDiv.textContent = '✅ 太棒了！(Excellent!)';
+                feedbackDiv.style.color = 'var(--success-color)';
+                score += 10;
+                scoreSpan.textContent = score;
+            } else {
+                cardElement.classList.add('wrong');
+                feedbackDiv.textContent = '❌ 再试一次！(Try Again!)';
+                feedbackDiv.style.color = 'var(--error-color)';
+                
+                // 标记出正确的那个
+                Array.from(document.querySelectorAll('.option-card')).forEach(card => {
+                    if (card.querySelector('.chinese').textContent === currentWord.chinese) {
+                        card.classList.add('correct');
+                    }
+                });
+            }
+
+            nextBtn.style.display = 'inline-block';
+        }
+
+        // 下一题
+        function nextQuestion() {
+            feedbackDiv.textContent = '';
+            nextBtn.style.display = 'none';
+            canClick = true;
+            renderOptions();
+            pickRandomWord();
+        }
+
+        // 启动
+        window.onload = initGame;
+    </script>
+</body>
+</html>
